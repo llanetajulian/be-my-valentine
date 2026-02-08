@@ -184,7 +184,7 @@
 
       // ✅ Correct: keep edges inside until click 19
       const noBarelyX = (zoneW - barelyX) - noHalfW; // center so right edge is zoneW-barelyX
-      const noBarelyY = (zoneH - barelyY) - noHalfH; // center so bottom edge is zoneH-barelyY
+      const noBarelyY = zoneH * 0.75; // center so bottom edge is zoneH-barelyY
 
       // fully off-screen at click 20
       const noOffX = zoneW + noHalfW + 12;
