@@ -166,7 +166,7 @@
     function updateLayout(stageIndex) {
       const tRaw = Math.min(stageIndex / MAX_CLICKS, 1);
       const yesT = easeOutCubic(tRaw);
-      const noT  = easeInQuad(tRaw);
+      const noT  = Math.pow(tRaw, 3);
 
       const pad = 18;
       const zoneW = bottomZone.clientWidth;
@@ -193,8 +193,12 @@
       yesBtn.style.fontSize = `${yesFont}px`;
 
       // NO stays same size but goes down-right OFF screen by click 20
-      const noOffX = zoneW + 160;   // beyond right edge
-      const noOffY = zoneH + 140;   // beyond bottom edge
+      const noHalfW = noBtn.offsetWidth / 2;   // beyond right edge
+      const noHalfH = noBtn.offsetHeight / 2;   // beyond bottom edge
+
+      // Just barely off-screen at the final click (based on real button size)
+      const noOffX = zoneW + noHalfW + 12;
+      const noOffY = zoneH + noHalfH + 12;
       const noX = lerp(noStartX, noOffX, noT);
       const noY = lerp(startY,  noOffY, noT);
 
