@@ -66,7 +66,7 @@
       font-weight: 900;
       cursor: pointer;
       transition: box-shadow 0.2s ease, transform 0.2s ease;
-      position: absolute;
+      position: absolute; /* absolute from the start */
       left: 0;
       top: 0;
       transform: translate(-50%, -50%);
@@ -129,11 +129,7 @@
       { file: "oh hell nah.gif", text: "Oh hell nah" }
     ];
 
-    const MAX_CLICKS = stages.length;
-
-    // TUNE THIS if needed:
-    // Higher = NO moves slower early, faster late.
-    const NO_POWER = 4.5;
+    const MAX_CLICKS = stages.length; // 20
 
     let noCount = 0;
 
@@ -151,34 +147,32 @@
       return a + (b - a) * t;
     }
 
-    // YES growth curve (feels good)
+    // YES growth curve (nice feel, doesn't affect NO anymore)
     function easeOutCubic(t) {
       return 1 - Math.pow(1 - t, 3);
     }
 
     function setStage(stageIndex) {
       const stage = stages[stageIndex - 1];
-      stageTextEl.textContent = stage.text;         // REPLACE
-      mainMedia.src = encodeAssetPath(stage.file);   // swap media
+      stageTextEl.textContent = stage.text;
+      mainMedia.src = encodeAssetPath(stage.file);
     }
 
     function updateLayout(stageIndex) {
+      const zoneW = bottomZone.clientWidth;
+      const zoneH = bottomZone.clientHeight;
+
+      // ---- YES ----
       const tRaw = Math.min(stageIndex / MAX_CLICKS, 1);
       const yesT = easeOutCubic(tRaw);
 
       const pad = 18;
-      const zoneW = bottomZone.clientWidth;
-      const zoneH = bottomZone.clientHeight;
 
-      // initial centers (side-by-side)
       const yesStartX = zoneW * 0.35;
-      const noStartX  = zoneW * 0.65;
-      const startY    = zoneH * 0.50;
-
-      // YES grows to fill bottom zone (minus padding) and recenters to true center
       const yesTargetX = zoneW * 0.50;
+      const yesY = zoneH * 0.50;
+
       const yesX = lerp(yesStartX, yesTargetX, yesT);
-      const yesY = startY;
 
       const yesW = lerp(220, Math.max(220, zoneW - pad * 2), yesT);
       const yesH = lerp(66,  Math.max(66,  zoneH - pad * 2), yesT);
@@ -190,37 +184,50 @@
       yesBtn.style.height = `${yesH}px`;
       yesBtn.style.fontSize = `${yesFont}px`;
 
-      // --- NO movement (slow early, barely visible at 19, gone at 20) ---
+      // ---- NO (DETERMINISTIC) ----
+      const noStartX = zoneW * 0.65;
+      const noStartY = zoneH * 0.50;
+
       const noHalfW = noBtn.offsetWidth / 2;
       const noHalfH = noBtn.offsetHeight / 2;
 
-      // how many pixels still visible at click 19
+      // How many pixels of NO are still visible at click 19
       const barely = 6;
 
-      // Correct "barely visible" CENTER position:
-      // Left edge ~ zoneW - barely  => center = zoneW - barely + halfWidth
-      // Top edge  ~ zoneH - barely  => center = zoneH - barely + halfHeight
+      // At click 19, we want ONLY "barely" pixels visible.
+      // That means the button's LEFT edge is at (zoneW - barely)
+      // => center X is (zoneW - barely + halfW). Same idea for Y.
       const noBarelyX = zoneW - barely + noHalfW;
       const noBarelyY = zoneH - barely + noHalfH;
 
-      // Fully off-screen (center beyond edge)
+      // At click 20, fully off-screen
       const noOffX = zoneW + noHalfW + 12;
       const noOffY = zoneH + noHalfH + 12;
 
-      if (stageIndex < MAX_CLICKS) {
-        // 1..19 maps to 0..1 using MAX_CLICKS-1
-        const noBase = (MAX_CLICKS <= 2) ? 1 : (stageIndex / (MAX_CLICKS - 1));
-        const noProgress = Math.pow(noBase, NO_POWER);
+      if (stageIndex === 0) {
+        // Start: side-by-side
+        noBtn.style.left = `${noStartX}px`;
+        noBtn.style.top  = `${noStartY}px`;
+        noBtn.style.opacity = "1";
+        noBtn.style.pointerEvents = "auto";
+        return;
+      }
 
-        const noX = lerp(noStartX, noBarelyX, noProgress);
-        const noY = lerp(startY,  noBarelyY, noProgress);
+      if (stageIndex < MAX_CLICKS) {
+        // stage 1..19 -> step 0..18 out of 18 total steps
+        const steps = MAX_CLICKS - 2; // 18
+        const stepIndex = stageIndex - 1; // 0..18
+        const p = steps <= 0 ? 1 : (stepIndex / steps); // 0..1
+
+        const noX = lerp(noStartX, noBarelyX, p);
+        const noY = lerp(noStartY, noBarelyY, p);
 
         noBtn.style.left = `${noX}px`;
         noBtn.style.top  = `${noY}px`;
         noBtn.style.opacity = "1";
         noBtn.style.pointerEvents = "auto";
       } else {
-        // click 20
+        // stage 20
         noBtn.style.left = `${noOffX}px`;
         noBtn.style.top  = `${noOffY}px`;
         noBtn.style.opacity = "0";
