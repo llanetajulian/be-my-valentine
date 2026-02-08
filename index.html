@@ -14,7 +14,6 @@
       overflow: hidden;
     }
 
-    /* Top half */
     .top {
       height: 50vh;
       display: flex;
@@ -40,7 +39,6 @@
       font-weight: 700;
     }
 
-    /* Stage text: REPLACE each click, bigger */
     #stageText {
       min-height: 2.6rem;
       margin-top: 8px;
@@ -48,7 +46,6 @@
       font-weight: 700;
     }
 
-    /* Bottom half */
     .bottom {
       height: 50vh;
       position: relative;
@@ -66,7 +63,7 @@
       font-weight: 900;
       cursor: pointer;
       transition: box-shadow 0.2s ease, transform 0.2s ease;
-      position: absolute; /* absolute from the start */
+      position: absolute;
       left: 0;
       top: 0;
       transform: translate(-50%, -50%);
@@ -77,17 +74,8 @@
       transform: translate(-50%, -50%) scale(1.03);
     }
 
-    #yesBtn {
-      background: #4CAF50;
-      color: #fff;
-      z-index: 1;
-    }
-
-    #noBtn {
-      background: #E53935;
-      color: #fff;
-      z-index: 2;
-    }
+    #yesBtn { background: #4CAF50; color: #fff; z-index: 1; }
+    #noBtn  { background: #E53935; color: #fff; z-index: 2; }
   </style>
 </head>
 
@@ -129,7 +117,7 @@
       { file: "oh hell nah.gif", text: "Oh hell nah" }
     ];
 
-    const MAX_CLICKS = stages.length; // 20
+    const MAX_CLICKS = stages.length;
 
     let noCount = 0;
 
@@ -147,7 +135,6 @@
       return a + (b - a) * t;
     }
 
-    // YES growth curve (nice feel, doesn't affect NO anymore)
     function easeOutCubic(t) {
       return 1 - Math.pow(1 - t, 3);
     }
@@ -184,28 +171,26 @@
       yesBtn.style.height = `${yesH}px`;
       yesBtn.style.fontSize = `${yesFont}px`;
 
-      // ---- NO (DETERMINISTIC) ----
+      // ---- NO (deterministic, fixed targets) ----
       const noStartX = zoneW * 0.65;
       const noStartY = zoneH * 0.50;
 
       const noHalfW = noBtn.offsetWidth / 2;
       const noHalfH = noBtn.offsetHeight / 2;
 
-      // How many pixels of NO are still visible at click 19
-      const barely = 6;
+      // pixels still showing at click 19
+      const barelyX = 6;
+      const barelyY = 6;
 
-      // At click 19, we want ONLY "barely" pixels visible.
-      // That means the button's LEFT edge is at (zoneW - barely)
-      // => center X is (zoneW - barely + halfW). Same idea for Y.
-      const noBarelyX = zoneW - barely + noHalfW;
-      const noBarelyY = zoneH - barely + noHalfH;
+      // ✅ Correct: keep edges inside until click 19
+      const noBarelyX = (zoneW - barelyX) - noHalfW; // center so right edge is zoneW-barelyX
+      const noBarelyY = (zoneH - barelyY) - noHalfH; // center so bottom edge is zoneH-barelyY
 
-      // At click 20, fully off-screen
+      // fully off-screen at click 20
       const noOffX = zoneW + noHalfW + 12;
       const noOffY = zoneH + noHalfH + 12;
 
       if (stageIndex === 0) {
-        // Start: side-by-side
         noBtn.style.left = `${noStartX}px`;
         noBtn.style.top  = `${noStartY}px`;
         noBtn.style.opacity = "1";
@@ -214,10 +199,10 @@
       }
 
       if (stageIndex < MAX_CLICKS) {
-        // stage 1..19 -> step 0..18 out of 18 total steps
-        const steps = MAX_CLICKS - 2; // 18
-        const stepIndex = stageIndex - 1; // 0..18
-        const p = steps <= 0 ? 1 : (stepIndex / steps); // 0..1
+        // stage 1..19 -> p 0..1 (19 lands at barely visible)
+        const steps = MAX_CLICKS - 2;      // 18
+        const stepIndex = stageIndex - 1;  // 0..18
+        const p = steps <= 0 ? 1 : (stepIndex / steps);
 
         const noX = lerp(noStartX, noBarelyX, p);
         const noY = lerp(noStartY, noBarelyY, p);
@@ -237,17 +222,15 @@
 
     noBtn.addEventListener("click", () => {
       if (noCount >= MAX_CLICKS) return;
-
       noCount++;
       setStage(noCount);
       updateLayout(noCount);
     });
 
     yesBtn.addEventListener("click", () => {
-      alert("OKAYYYY LET’S GOOOO 💖"); // placeholder celebration
+      alert("OKAYYYY LET’S GOOOO 💖");
     });
 
-    // Initial placement
     updateLayout(0);
 
     window.addEventListener("resize", () => {
