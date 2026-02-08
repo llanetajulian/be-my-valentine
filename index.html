@@ -4,14 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Be My Valentine</title>
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 
   <style>
     body {
       margin: 0;
       min-height: 100vh;
       background: #ffffff;
-      font-family: sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       overflow: hidden;
     }
 
@@ -28,7 +27,7 @@
       z-index: 2;
     }
 
-    .main-gif {
+    .main-media {
       height: 35vh;
       width: auto;
       max-width: 90vw;
@@ -37,93 +36,83 @@
 
     h1 {
       margin: 0 0 10px;
-      font-family: 'Pacifico', cursive;
       font-size: 2.4rem;
+      font-weight: 700;
     }
 
-    #pleaArea {
-      min-height: 110px;
-      width: min(700px, 92vw);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: center;
-      justify-content: flex-start;
-      margin-top: 6px;
-      overflow: hidden;
+    /* stage text (REPLACES each click; bigger) */
+    #stageText {
+      min-height: 2.6rem;
+      margin-top: 8px;
+      font-size: 2.2rem; /* ~2x from earlier 1.1ish */
+      font-weight: 700;
     }
 
-    .plea {
-      margin: 0;
-      font-size: 1.15rem;
-    }
-
-    /* Bottom half stage for buttons */
+    /* Bottom half zone */
     .bottom {
       height: 50vh;
       position: relative;
+      padding: 18px;
+      z-index: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
-      z-index: 1;
     }
 
-    /* YES grows to fill the bottom half with padding */
-    #yesBtn {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      background: #4CAF50;
-      color: white;
-      border: 3px solid rgba(0,0,0,0.12);
-      border-radius: 20px;
-      font-weight: 900;
-      cursor: pointer;
-      transition: width 0.25s ease, height 0.25s ease, font-size 0.25s ease;
-      width: 230px;
+    /* Initial row layout: side-by-side same size */
+    .buttonRow {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 3;
+    }
+
+    button {
+      width: 220px;
       height: 66px;
       font-size: 22px;
-      z-index: 1;
-    }
-
-    /* NO stays same size but moves toward bottom-right */
-    #noBtn {
-      position: absolute;
-      right: 24px;
-      bottom: 24px;
-      background: #E53935;
-      color: white;
       border: 3px solid rgba(0,0,0,0.12);
       border-radius: 18px;
       font-weight: 900;
       cursor: pointer;
-      width: 200px;
-      height: 66px;
-      font-size: 22px;
-      transition: right 0.25s ease, bottom 0.25s ease, opacity 0.25s ease;
-      z-index: 2;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      transform: scale(1.03);
+    }
+
+    #yesBtn {
+      background: #4CAF50;
+      color: #fff;
+    }
+
+    #noBtn {
+      background: #E53935;
+      color: #fff;
     }
   </style>
 </head>
 
 <body>
   <div class="top">
-    <img id="mainMedia" src="assets/ezgif.com-coalesce.gif" alt="Valentine" class="main-gif" />
-    <h1>Will you be my Valentine?</h1>
-    <div id="pleaArea"></div>
+    <img id="mainMedia" src="assets/shaq.gif" alt="Valentine" class="main-media" />
+    <h1>𝑊𝑖𝑙𝑙 𝑦𝑜𝑢 𝑏𝑒 𝑚𝑦 𝑉𝑎𝑙𝑒𝑛𝑡𝑖𝑛𝑒?</h1>
+    <div id="stageText"></div>
   </div>
 
   <div class="bottom" id="bottomZone">
-    <button id="yesBtn">YES 💖</button>
-    <button id="noBtn">NO</button>
+    <div class="buttonRow" id="buttonRow">
+      <button id="yesBtn">YES 💖</button>
+      <button id="noBtn">NO</button>
+    </div>
   </div>
 
   <script>
-    const MAX_CLICKS = 20;
-
-    // Your media files are directly inside /assets
+    // Files are directly inside /assets
     const MEDIA_BASE = "assets/";
 
     const stages = [
@@ -149,36 +138,80 @@
       { file: "oh hell nah.gif", text: "Oh hell nah" }
     ];
 
-    let noCount = 0;
+    const MAX_CLICKS = stages.length;
 
-    const pleaArea = document.getElementById("pleaArea");
-    const mainMedia = document.getElementById("mainMedia");
+    let noCount = 0;
+    let absoluteMode = false;
+
+    const bottomZone = document.getElementById("bottomZone");
+    const buttonRow = document.getElementById("buttonRow");
     const yesBtn = document.getElementById("yesBtn");
     const noBtn = document.getElementById("noBtn");
-    const bottomZone = document.getElementById("bottomZone");
+    const mainMedia = document.getElementById("mainMedia");
+    const stageTextEl = document.getElementById("stageText");
 
-    function addPleaLine(text) {
-      const p = document.createElement("p");
-      p.className = "plea";
-      p.textContent = text;
-      pleaArea.appendChild(p);
-      pleaArea.scrollTop = pleaArea.scrollHeight;
+    function encodeAssetPath(filename) {
+      return encodeURI(MEDIA_BASE + filename);
     }
 
     function lerp(a, b, t) {
       return a + (b - a) * t;
     }
 
-    function updateButtons(stage) {
-      const t = Math.min(stage / MAX_CLICKS, 1);
+    // Switch from flex layout to absolute positioning WITHOUT jumping
+    function enterAbsoluteModeIfNeeded() {
+      if (absoluteMode) return;
 
-      // padding so YES never touches edges
+      const zoneRect = bottomZone.getBoundingClientRect();
+      const yesRect = yesBtn.getBoundingClientRect();
+      const noRect  = noBtn.getBoundingClientRect();
+
+      // Convert buttons to absolute positions inside bottomZone, preserving their current spot
+      yesBtn.style.position = "absolute";
+      noBtn.style.position  = "absolute";
+
+      // Remove from flex flow
+      buttonRow.style.display = "block";
+      buttonRow.style.position = "static";
+
+      // Place YES exactly where it was
+      const yesLeft = (yesRect.left - zoneRect.left) + (yesRect.width / 2);
+      const yesTop  = (yesRect.top  - zoneRect.top)  + (yesRect.height / 2);
+      yesBtn.style.left = `${yesLeft}px`;
+      yesBtn.style.top  = `${yesTop}px`;
+      yesBtn.style.transform = "translate(-50%, -50%)";
+
+      // Place NO exactly where it was
+      const noLeft = (noRect.left - zoneRect.left) + (noRect.width / 2);
+      const noTop  = (noRect.top  - zoneRect.top)  + (noRect.height / 2);
+      noBtn.style.left = `${noLeft}px`;
+      noBtn.style.top  = `${noTop}px`;
+      noBtn.style.transform = "translate(-50%, -50%)";
+
+      absoluteMode = true;
+    }
+
+    function updateStage(stageIndex) {
+      // stageIndex is 1..MAX_CLICKS
+      const stage = stages[stageIndex - 1];
+
+      // Replace (not stack) stage text
+      stageTextEl.textContent = stage.text;
+
+      // Swap center media
+      mainMedia.src = encodeAssetPath(stage.file);
+    }
+
+    function updateButtons(stageIndex) {
+      // stageIndex 0..MAX_CLICKS
+      const t = Math.min(stageIndex / MAX_CLICKS, 1);
+
+      // YES grows to fill bottom zone with padding, but stays centered on its original spot
       const pad = 18;
-
       const zoneW = bottomZone.clientWidth;
       const zoneH = bottomZone.clientHeight;
 
-      const yesW = lerp(230, Math.max(230, zoneW - pad * 2), t);
+      const yesW = lerp(220, Math.max(220, zoneW - pad * 2), t);
       const yesH = lerp(66,  Math.max(66,  zoneH - pad * 2), t);
       const yesFont = lerp(22, 44, t);
 
@@ -186,43 +219,39 @@
       yesBtn.style.height = `${yesH}px`;
       yesBtn.style.fontSize = `${yesFont}px`;
 
-      // NO stays same size, slides off bottom-right, fades out
-      const noRight = lerp(24, -260, t);
-      const noBottom = lerp(24, -140, t);
-      const noOpacity = lerp(1, 0, t);
+      // NO stays same size; moves down+right gradually.
+      // By click 20 it should be "barely showing", not completely gone.
+      // We achieve that with a translate that pushes it past the corner a bit.
+      const dx = lerp(0, 260, t);   // move right
+      const dy = lerp(0, 150, t);   // move down
 
-      noBtn.style.right = `${noRight}px`;
-      noBtn.style.bottom = `${noBottom}px`;
-      noBtn.style.opacity = `${noOpacity}`;
+      noBtn.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
 
-      if (t >= 1) {
-        noBtn.disabled = true;
-        noBtn.style.pointerEvents = "none";
-      }
-    }
-
-    function swapMediaForStage(stageIndex) {
-      const stage = stages[stageIndex - 1];
-      const rawPath = MEDIA_BASE + stage.file;
-      mainMedia.src = encodeURI(rawPath);
+      // Optional: keep it visible until very end, then barely visible
+      // (no opacity fade, since you didn't ask for it)
     }
 
     noBtn.addEventListener("click", () => {
-      noCount++;
-      const stage = Math.min(noCount, MAX_CLICKS);
+      if (noCount >= MAX_CLICKS) return;
 
-      addPleaLine(stages[stage - 1].text);
-      swapMediaForStage(stage);
-      updateButtons(stage);
+      noCount++;
+      enterAbsoluteModeIfNeeded();
+
+      updateStage(noCount);
+      updateButtons(noCount);
     });
 
     yesBtn.addEventListener("click", () => {
-      alert("OKAYYYY LET’S GOOOO 💖");
+      alert("OKAYYYY LET’S GOOOO 💖"); // placeholder celebration
     });
 
-    // Initialize
+    // Initialize: start image shaq.gif, no stage text, buttons same size side-by-side
     updateButtons(0);
-    window.addEventListener("resize", () => updateButtons(Math.min(noCount, MAX_CLICKS)));
+
+    // Keep YES sizing correct on resize (NO position also recalculates)
+    window.addEventListener("resize", () => {
+      updateButtons(Math.min(noCount, MAX_CLICKS));
+    });
   </script>
 </body>
 </html>
