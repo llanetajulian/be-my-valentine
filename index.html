@@ -4,91 +4,225 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Be My Valentine</title>
-
-  <!-- Google Font (keep if you already added one) -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 
   <style>
     body {
       margin: 0;
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
       background: #ffffff;
       font-family: sans-serif;
+      overflow: hidden;
     }
 
-    .container {
-      text-align: center;
-      margin-top: 8vh;
+    /* Top half content */
+    .top {
       height: 50vh;
       display: flex;
       flex-direction: column;
+      align-items: center;
       justify-content: center;
+      padding: 4vh 16px 0;
+      text-align: center;
+      position: relative;
+      z-index: 2;
     }
 
     .main-gif {
-      height: 55vh;
+      height: 35vh;
       width: auto;
       max-width: 90vw;
-      margin: 0 auto 16px;
+      margin: 0 auto 12px;
     }
 
     h1 {
-      margin: 0 0 24px;
+      margin: 0 0 10px;
       font-family: 'Pacifico', cursive;
       font-size: 2.4rem;
     }
 
-    .buttons {
+    #pleaArea {
+      min-height: 110px;
+      width: min(700px, 92vw);
       display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-start;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .plea {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    /* Bottom half stage for buttons */
+    .bottom {
+      height: 50vh;
+      position: relative;
+      display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 32px;
-      margin-top: 12px;
+      padding: 16px;
+      z-index: 1;
     }
 
-    button {
-      padding: 16px 36px;
-      font-size: 22px;
-      border: none;
-      border-radius: 16px;
+    /* YES grows to fill the bottom half with padding */
+    #yesBtn {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: #4CAF50;
+      color: white;
+      border: 3px solid rgba(0,0,0,0.12);
+      border-radius: 20px;
+      font-weight: 900;
       cursor: pointer;
-      font-weight: bold;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: width 0.25s ease, height 0.25s ease, font-size 0.25s ease;
+      width: 230px;
+      height: 66px;
+      font-size: 22px;
+      z-index: 1;
     }
 
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    }
-
-    .yes {
-      background: #4CAF50; /* green */
+    /* NO stays same size but moves toward bottom-right */
+    #noBtn {
+      position: absolute;
+      right: 24px;
+      bottom: 24px;
+      background: #E53935;
       color: white;
-    }
-
-    .no {
-      background: #E53935; /* red */
-      color: white;
+      border: 3px solid rgba(0,0,0,0.12);
+      border-radius: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      width: 200px;
+      height: 66px;
+      font-size: 22px;
+      transition: right 0.25s ease, bottom 0.25s ease, opacity 0.25s ease;
+      z-index: 2;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <img
-      src="assets/shaq.gif"
-      alt="Valentine gif"
-      class="main-gif"
-    />
-
-    <h1>𝑊𝑖𝑙𝑙 𝑦𝑜𝑢 𝑏𝑒 𝑚𝑦 𝑉𝑎𝑙𝑒𝑛𝑡𝑖𝑛𝑒?</h1>
-
-    <div class="buttons">
-      <button class="yes">YES 💖</button>
-      <button class="no">NO</button>
-    </div>
+  <div class="top">
+    <img id="mainMedia" src="assets/ezgif.com-coalesce.gif" alt="Valentine" class="main-gif" />
+    <h1>Will you be my Valentine?</h1>
+    <div id="pleaArea"></div>
   </div>
+
+  <div class="bottom" id="bottomZone">
+    <button id="yesBtn">YES 💖</button>
+    <button id="noBtn">NO</button>
+  </div>
+
+  <script>
+    const MAX_CLICKS = 20;
+
+    // Your media files are directly inside /assets
+    const MEDIA_BASE = "assets/";
+
+    const stages = [
+      { file: "No.gif", text: "No?" },
+      { file: "Noo.gif", text: "No??" },
+      { file: "Please.gif", text: "Please?" },
+      { file: "Pleasee.webp", text: "Please??" },
+      { file: "Pleeeeease.gif", text: "Pleeeeease" },
+      { file: "Please smile.gif", text: "Please? 🙂" },
+      { file: "why.webp", text: "Why?!" },
+      { file: "okay fr.gif", text: "Okay fr" },
+      { file: "babe.gif", text: "Babe" },
+      { file: "i'll do anything.gif", text: "I'll do anything" },
+      { file: "im sorry it took so long.gif", text: "I'm sorry it took so long" },
+      { file: "you're being mean.gif", text: "You're being mean" },
+      { file: "okay you're embarrassing me now.gif", text: "Okay you're embarrassing me now" },
+      { file: "you mean yes.gif", text: "You mean yes" },
+      { file: "don't make me drop to my knees.gif", text: "Don't make me drop to my knees" },
+      { file: "im trying.gif", text: "IM TRYING!" },
+      { file: "babe exclamation point.webp", text: "BABE!" },
+      { file: "be so fr rn.gif", text: "Be so fr rn" },
+      { file: "be soooooooooo fr rn.gif", text: "Be soooooooooo fr rn" },
+      { file: "oh hell nah.gif", text: "Oh hell nah" }
+    ];
+
+    let noCount = 0;
+
+    const pleaArea = document.getElementById("pleaArea");
+    const mainMedia = document.getElementById("mainMedia");
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn = document.getElementById("noBtn");
+    const bottomZone = document.getElementById("bottomZone");
+
+    function addPleaLine(text) {
+      const p = document.createElement("p");
+      p.className = "plea";
+      p.textContent = text;
+      pleaArea.appendChild(p);
+      pleaArea.scrollTop = pleaArea.scrollHeight;
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function updateButtons(stage) {
+      const t = Math.min(stage / MAX_CLICKS, 1);
+
+      // padding so YES never touches edges
+      const pad = 18;
+
+      const zoneW = bottomZone.clientWidth;
+      const zoneH = bottomZone.clientHeight;
+
+      const yesW = lerp(230, Math.max(230, zoneW - pad * 2), t);
+      const yesH = lerp(66,  Math.max(66,  zoneH - pad * 2), t);
+      const yesFont = lerp(22, 44, t);
+
+      yesBtn.style.width = `${yesW}px`;
+      yesBtn.style.height = `${yesH}px`;
+      yesBtn.style.fontSize = `${yesFont}px`;
+
+      // NO stays same size, slides off bottom-right, fades out
+      const noRight = lerp(24, -260, t);
+      const noBottom = lerp(24, -140, t);
+      const noOpacity = lerp(1, 0, t);
+
+      noBtn.style.right = `${noRight}px`;
+      noBtn.style.bottom = `${noBottom}px`;
+      noBtn.style.opacity = `${noOpacity}`;
+
+      if (t >= 1) {
+        noBtn.disabled = true;
+        noBtn.style.pointerEvents = "none";
+      }
+    }
+
+    function swapMediaForStage(stageIndex) {
+      const stage = stages[stageIndex - 1];
+      const rawPath = MEDIA_BASE + stage.file;
+      mainMedia.src = encodeURI(rawPath);
+    }
+
+    noBtn.addEventListener("click", () => {
+      noCount++;
+      const stage = Math.min(noCount, MAX_CLICKS);
+
+      addPleaLine(stages[stage - 1].text);
+      swapMediaForStage(stage);
+      updateButtons(stage);
+    });
+
+    yesBtn.addEventListener("click", () => {
+      alert("OKAYYYY LET’S GOOOO 💖");
+    });
+
+    // Initialize
+    updateButtons(0);
+    window.addEventListener("resize", () => updateButtons(Math.min(noCount, MAX_CLICKS)));
+  </script>
 </body>
 </html>
