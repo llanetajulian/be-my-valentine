@@ -166,7 +166,7 @@
     function updateLayout(stageIndex) {
       const tRaw = Math.min(stageIndex / MAX_CLICKS, 1);
       const yesT = easeOutCubic(tRaw);
-      const noT  = Math.pow(tRaw, 4);
+      const noT  = Math.pow(tRaw, 5);
 
       const pad = 18;
       const zoneW = bottomZone.clientWidth;
