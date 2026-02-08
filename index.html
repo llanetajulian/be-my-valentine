@@ -66,7 +66,7 @@
       font-weight: 900;
       cursor: pointer;
       transition: box-shadow 0.2s ease, transform 0.2s ease;
-      position: absolute; /* IMPORTANT: absolute from the start */
+      position: absolute; /* absolute from the start */
       left: 0;
       top: 0;
       transform: translate(-50%, -50%);
@@ -147,38 +147,31 @@
       return a + (b - a) * t;
     }
 
-    // YES: feels nice
+    // YES: smooth + quick
     function easeOutCubic(t) {
       return 1 - Math.pow(1 - t, 3);
     }
 
-    // NO: barely moves early, accelerates late (so it doesn't vanish instantly)
-    function easeInQuad(t) {
-      return t;
-    }
-
     function setStage(stageIndex) {
       const stage = stages[stageIndex - 1];
-      stageTextEl.textContent = stage.text;           // REPLACE (not stack)
-      mainMedia.src = encodeAssetPath(stage.file);     // swap media
+      stageTextEl.textContent = stage.text;        // REPLACE
+      mainMedia.src = encodeAssetPath(stage.file);  // swap media
     }
 
     function updateLayout(stageIndex) {
       const tRaw = Math.min(stageIndex / MAX_CLICKS, 1);
       const yesT = easeOutCubic(tRaw);
-      const noT  = Math.pow(tRaw, 3);
-      const noTClamped = (stageIndex < MAX_CLICKS) ? Math.min(noT, 0.97) : 1;
 
       const pad = 18;
       const zoneW = bottomZone.clientWidth;
       const zoneH = bottomZone.clientHeight;
 
-      // Initial button centers (side-by-side)
+      // initial centers (side-by-side)
       const yesStartX = zoneW * 0.35;
       const noStartX  = zoneW * 0.65;
       const startY    = zoneH * 0.50;
 
-      // YES grows to fill the bottom zone (minus padding) and recenters to true center
+      // YES grows to fill bottom zone (minus padding) and recenters to true center
       const yesTargetX = zoneW * 0.50;
       const yesX = lerp(yesStartX, yesTargetX, yesT);
       const yesY = startY;
@@ -193,26 +186,38 @@
       yesBtn.style.height = `${yesH}px`;
       yesBtn.style.fontSize = `${yesFont}px`;
 
-      // NO stays same size but goes down-right OFF screen by click 20
-      const noHalfW = noBtn.offsetWidth / 2;   // beyond right edge
-      const noHalfH = noBtn.offsetHeight / 2;   // beyond bottom edge
+      // --- NO movement (GUARANTEED) ---
+      // Clicks 1..19: move toward "barely visible" bottom-right.
+      // Click 20: move fully off and hide.
+      const noHalfW = noBtn.offsetWidth / 2;
+      const noHalfH = noBtn.offsetHeight / 2;
 
-      // Just barely off-screen at the final click (based on real button size)
+      // Keep ~6px of the button showing
+      const barely = 6;
+      const noBarelyX = zoneW - noHalfW + barely;
+      const noBarelyY = zoneH - noHalfH + barely;
+
+      // Fully off-screen target
       const noOffX = zoneW + noHalfW + 12;
       const noOffY = zoneH + noHalfH + 12;
-      const noX = lerp(noStartX, noOffX, noTClamped);
-      const noY = lerp(startY,  noOffY, noTClamped);
 
-      noBtn.style.left = `${noX}px`;
-      noBtn.style.top  = `${noY}px`;
+      if (stageIndex < MAX_CLICKS) {
+        // spread across 1..19 so click 19 lands at "barely visible"
+        const noProgress = (MAX_CLICKS <= 1) ? 1 : (stageIndex / (MAX_CLICKS - 1));
 
-      // Hide NO only at the final stage
-      if (stageIndex >= MAX_CLICKS) {
-        noBtn.style.opacity = "0";
-        noBtn.style.pointerEvents = "none";
-      } else {
+        const noX = lerp(noStartX, noBarelyX, noProgress);
+        const noY = lerp(startY,  noBarelyY, noProgress);
+
+        noBtn.style.left = `${noX}px`;
+        noBtn.style.top  = `${noY}px`;
         noBtn.style.opacity = "1";
         noBtn.style.pointerEvents = "auto";
+      } else {
+        // click 20
+        noBtn.style.left = `${noOffX}px`;
+        noBtn.style.top  = `${noOffY}px`;
+        noBtn.style.opacity = "0";
+        noBtn.style.pointerEvents = "none";
       }
     }
 
@@ -228,7 +233,7 @@
       alert("OKAYYYY LET’S GOOOO 💖"); // placeholder celebration
     });
 
-    // Initial placement (start screen)
+    // Initial placement
     updateLayout(0);
 
     window.addEventListener("resize", () => {
