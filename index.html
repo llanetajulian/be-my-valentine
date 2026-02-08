@@ -42,7 +42,7 @@
     #stageText {
       min-height: 2.6rem;
       margin-top: 8px;
-      font-size: 2.2rem;
+      font-size: 2.2rem; /* bigger */
       font-weight: 700;
     }
 
@@ -69,7 +69,7 @@
       width: 220px;
       height: 66px;
       font-size: 22px;
-      border: 3px solid rgba(0,0,0,0.12);
+      border: 2px solid rgba(0,0,0,0.12); /* thin border */
       border-radius: 18px;
       font-weight: 900;
       cursor: pointer;
@@ -145,11 +145,8 @@
     const mainMedia = document.getElementById("mainMedia");
     const stageTextEl = document.getElementById("stageText");
 
-    // For smooth center shift:
-    let yesStartCX = null;
-    let yesStartCY = null;
-    let noStartCX = null;
-    let noStartCY = null;
+    let yesStartCX = null, yesStartCY = null;
+    let noStartCX  = null, noStartCY  = null;
 
     function encodeAssetPath(filename) {
       return encodeURI(MEDIA_BASE + filename);
@@ -159,9 +156,14 @@
       return a + (b - a) * t;
     }
 
-    // nice, smooth ramp (feels less linear/robotic)
+    // YES: smooth + quick
     function easeOutCubic(t) {
       return 1 - Math.pow(1 - t, 3);
+    }
+
+    // NO: slow early, fast late (prevents first-click teleport)
+    function easeInPower(t, p = 2.2) {
+      return Math.pow(t, p);
     }
 
     function enterAbsoluteModeIfNeeded() {
@@ -171,18 +173,15 @@
       const yesRect = yesBtn.getBoundingClientRect();
       const noRect  = noBtn.getBoundingClientRect();
 
-      // store starting centers in bottomZone coords
       yesStartCX = (yesRect.left - zoneRect.left) + (yesRect.width / 2);
       yesStartCY = (yesRect.top  - zoneRect.top)  + (yesRect.height / 2);
 
-      noStartCX = (noRect.left - zoneRect.left) + (noRect.width / 2);
-      noStartCY = (noRect.top  - zoneRect.top)  + (noRect.height / 2);
+      noStartCX  = (noRect.left  - zoneRect.left) + (noRect.width / 2);
+      noStartCY  = (noRect.top   - zoneRect.top)  + (noRect.height / 2);
 
-      // Convert to absolute positioning
       yesBtn.style.position = "absolute";
       noBtn.style.position  = "absolute";
 
-      // Remove flex flow without visually moving (we will place them)
       buttonRow.style.display = "block";
 
       yesBtn.style.left = `${yesStartCX}px`;
@@ -198,56 +197,50 @@
 
     function updateStage(stageIndex) {
       const stage = stages[stageIndex - 1];
-      stageTextEl.textContent = stage.text;
-      mainMedia.src = encodeAssetPath(stage.file);
+      stageTextEl.textContent = stage.text;       // REPLACE (not stack)
+      mainMedia.src = encodeAssetPath(stage.file); // swap media
     }
 
     function updateButtons(stageIndex) {
       const tRaw = Math.min(stageIndex / MAX_CLICKS, 1);
-      const t = easeOutCubic(tRaw);
+
+      const yesT = easeOutCubic(tRaw);
+      const noT  = easeInPower(tRaw, 2.2);
 
       const pad = 18;
-
-      // target center is true center of bottomZone (not the old left-ish center)
       const zoneW = bottomZone.clientWidth;
       const zoneH = bottomZone.clientHeight;
+
+      // YES fills the bottom zone (minus padding) and recenters to true center
       const targetCX = zoneW / 2;
       const targetCY = zoneH / 2;
 
-      // YES grows to fill bottom half with padding, and shifts its center to bottom center
-      const yesW = lerp(220, Math.max(220, zoneW - pad * 2), t);
-      const yesH = lerp(66,  Math.max(66,  zoneH - pad * 2), t);
-      const yesFont = lerp(22, 44, t);
+      const yesW = lerp(220, Math.max(220, zoneW - pad * 2), yesT);
+      const yesH = lerp(66,  Math.max(66,  zoneH - pad * 2), yesT);
+      const yesFont = lerp(22, 44, yesT);
 
       yesBtn.style.width = `${yesW}px`;
       yesBtn.style.height = `${yesH}px`;
       yesBtn.style.fontSize = `${yesFont}px`;
 
-      // Move YES center from its starting center -> dead center of bottom zone
       if (yesStartCX !== null && yesStartCY !== null) {
-        const yesCX = lerp(yesStartCX, targetCX, t);
-        const yesCY = lerp(yesStartCY, targetCY, t);
-        yesBtn.style.left = `${yesCX}px`;
-        yesBtn.style.top  = `${yesCY}px`;
+        yesBtn.style.left = `${lerp(yesStartCX, targetCX, yesT)}px`;
+        yesBtn.style.top  = `${lerp(yesStartCY, targetCY, yesT)}px`;
         yesBtn.style.transform = "translate(-50%, -50%)";
       }
 
-      // NO stays same size, but moves much further down/right and is fully gone by click 20
+      // NO moves farther down/right and is OFF at click 20
       if (noStartCX !== null && noStartCY !== null) {
-        // push it beyond the zone so it disappears by the end
-        const offRight = zoneW + 260;   // how far past the right edge
-        const offDown  = zoneH + 180;   // how far past the bottom edge
+        const offRight = zoneW + 260;  // definitely beyond edge
+        const offDown  = zoneH + 220;
 
-        const noCX = lerp(noStartCX, offRight, t);
-        const noCY = lerp(noStartCY, offDown, t);
-
-        noBtn.style.left = `${noCX}px`;
-        noBtn.style.top  = `${noCY}px`;
+        noBtn.style.left = `${lerp(noStartCX, offRight, noT)}px`;
+        noBtn.style.top  = `${lerp(noStartCY, offDown,  noT)}px`;
         noBtn.style.transform = "translate(-50%, -50%)";
       }
 
-      // At the final stage, remove NO completely (clean finish)
-      if (tRaw >= 1) {
+      // Hide NO ONLY at final click (20)
+      if (stageIndex >= MAX_CLICKS) {
         noBtn.style.opacity = "0";
         noBtn.style.pointerEvents = "none";
       } else {
@@ -270,12 +263,12 @@
       alert("OKAYYYY LET’S GOOOO 💖"); // placeholder celebration
     });
 
+    // Start state: shaq.gif + title + buttons side-by-side
     updateButtons(0);
 
     window.addEventListener("resize", () => {
-      // Re-lock absolute mode positions after resize so it stays centered and fills correctly
       if (absoluteMode) {
-        // recompute start centers based on current positions (so it doesn't jump weirdly)
+        // keep things stable on resize
         const zoneRect = bottomZone.getBoundingClientRect();
         const yesRect = yesBtn.getBoundingClientRect();
         const noRect  = noBtn.getBoundingClientRect();
@@ -283,8 +276,8 @@
         yesStartCX = (yesRect.left - zoneRect.left) + (yesRect.width / 2);
         yesStartCY = (yesRect.top  - zoneRect.top)  + (yesRect.height / 2);
 
-        noStartCX = (noRect.left - zoneRect.left) + (noRect.width / 2);
-        noStartCY = (noRect.top  - zoneRect.top)  + (noRect.height / 2);
+        noStartCX  = (noRect.left  - zoneRect.left) + (noRect.width / 2);
+        noStartCY  = (noRect.top   - zoneRect.top)  + (noRect.height / 2);
       }
 
       updateButtons(Math.min(noCount, MAX_CLICKS));
