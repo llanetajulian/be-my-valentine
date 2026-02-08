@@ -14,6 +14,7 @@
       overflow: hidden;
     }
 
+    /* Top half */
     .top {
       height: 50vh;
       display: flex;
@@ -46,6 +47,7 @@
       font-weight: 700;
     }
 
+    /* Bottom half */
     .bottom {
       height: 50vh;
       position: relative;
@@ -76,6 +78,69 @@
 
     #yesBtn { background: #4CAF50; color: #fff; z-index: 1; }
     #noBtn  { background: #E53935; color: #fff; z-index: 2; }
+
+    /* ---------------- Celebration overlay ---------------- */
+    .celebrate {
+      position: fixed;
+      inset: 0;
+      display: none; /* shown on YES click */
+      z-index: 9999;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .celebrate.show {
+      display: block;
+    }
+
+    /* 2x2 full-screen image grid */
+    .celebrate-grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .celebrate-grid img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Big YES text */
+    .celebrate-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 2;
+      pointer-events: none;
+      padding: 20px;
+    }
+
+    .celebrate-text h2 {
+      margin: 0;
+      font-size: clamp(48px, 8vw, 110px);
+      font-weight: 1000;
+      letter-spacing: 1px;
+      color: white;
+      text-shadow: 0 8px 30px rgba(0,0,0,0.45);
+    }
+
+    /* Confetti canvas sits above images but below text */
+    #confettiCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -89,6 +154,22 @@
   <div class="bottom" id="bottomZone">
     <button id="yesBtn">YES 💖</button>
     <button id="noBtn">NO</button>
+  </div>
+
+  <!-- Celebration overlay -->
+  <div id="celebrate" class="celebrate" aria-hidden="true">
+    <div class="celebrate-grid">
+      <img src="assets/date selfie.jpg" alt="date selfie" />
+      <img src="assets/sunglasses smile.jpg" alt="sunglasses smile" />
+      <img src="assets/funny smile.jpg" alt="funny smile" />
+      <img src="assets/leonardo.gif" alt="leonardo gif" />
+    </div>
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <div class="celebrate-text">
+      <h2>YES!!!!!!!!!!</h2>
+    </div>
   </div>
 
   <script>
@@ -125,6 +206,9 @@
     const noBtn = document.getElementById("noBtn");
     const mainMedia = document.getElementById("mainMedia");
     const stageTextEl = document.getElementById("stageText");
+
+    const celebrate = document.getElementById("celebrate");
+    const confettiCanvas = document.getElementById("confettiCanvas");
 
     function encodeAssetPath(filename) {
       return encodeURI(MEDIA_BASE + filename);
@@ -177,15 +261,12 @@
       const noHalfW = noBtn.offsetWidth / 2;
       const noHalfH = noBtn.offsetHeight / 2;
 
-      // More forgiving "barely visible"
       const barelyX = 16;
       const barelyY = 16;
 
-      // Right/bottom edge stay inside by "barely"
       const noBarelyX = (zoneW - barelyX) - noHalfW;
       const noBarelyY = (zoneH - barelyY) - noHalfH;
 
-      // Fully off-screen at click 20
       const noOffX = zoneW + noHalfW + 12;
       const noOffY = zoneH + noHalfH + 12;
 
@@ -198,10 +279,8 @@
       }
 
       if (stageIndex < MAX_CLICKS) {
-        // KEY CHANGE:
-        // stage 1..19 -> p 0..(18/19) so click 19 is still slightly on-screen
-        const stepIndex = stageIndex - 1;  // 0..18
-        const p = stepIndex / (MAX_CLICKS - 1); // 0..18/19 (~0.947), never reaches 1
+        const stepIndex = stageIndex - 1;           // 0..18
+        const p = stepIndex / (MAX_CLICKS - 1);     // 0..18/19 (never reaches 1)
 
         const noX = lerp(noStartX, noBarelyX, p);
         const noY = lerp(noStartY, noBarelyY, p);
@@ -211,7 +290,6 @@
         noBtn.style.opacity = "1";
         noBtn.style.pointerEvents = "auto";
       } else {
-        // click 20
         noBtn.style.left = `${noOffX}px`;
         noBtn.style.top  = `${noOffY}px`;
         noBtn.style.opacity = "0";
@@ -219,6 +297,84 @@
       }
     }
 
+    // ---- One-time confetti burst (no library) ----
+    function confettiBurst() {
+      const ctx = confettiCanvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+
+      function resize() {
+        confettiCanvas.width = Math.floor(window.innerWidth * dpr);
+        confettiCanvas.height = Math.floor(window.innerHeight * dpr);
+        confettiCanvas.style.width = "100%";
+        confettiCanvas.style.height = "100%";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      resize();
+
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+
+      const colors = ["#ff4d6d", "#ffb703", "#8ecae6", "#06d6a0", "#ffffff", "#8338ec"];
+      const count = 140;
+      const particles = [];
+
+      const originX = W / 2;
+      const originY = H / 3; // burst from upper-middle
+
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 4 + Math.random() * 10;
+        particles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 6,
+          g: 0.22 + Math.random() * 0.12,
+          size: 4 + Math.random() * 6,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.25,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 90 + Math.floor(Math.random() * 40) // frames
+        });
+      }
+
+      let frame = 0;
+      function tick() {
+        frame++;
+        ctx.clearRect(0, 0, W, H);
+
+        for (const p of particles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.g;
+          p.rot += p.vr;
+          p.life--;
+
+          if (p.life <= 0) continue;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 60));
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.7);
+          ctx.restore();
+        }
+
+        if (frame < 140) {
+          requestAnimationFrame(tick);
+        } else {
+          ctx.clearRect(0, 0, W, H);
+        }
+      }
+
+      tick();
+
+      window.addEventListener("resize", resize, { once: true });
+    }
+
+    // Events
     noBtn.addEventListener("click", () => {
       if (noCount >= MAX_CLICKS) return;
       noCount++;
@@ -227,9 +383,19 @@
     });
 
     yesBtn.addEventListener("click", () => {
-      alert("OKAYYYY LET’S GOOOO 💖"); // placeholder celebration
+      // Show celebration overlay
+      celebrate.classList.add("show");
+      celebrate.style.backgroundImage = `url("${encodeURI("assets/valentine background.png")}")`;
+
+      // optional: freeze/hide the original UI behind
+      document.querySelector(".top").style.display = "none";
+      bottomZone.style.display = "none";
+
+      // one-time confetti burst
+      confettiBurst();
     });
 
+    // Initial placement
     updateLayout(0);
 
     window.addEventListener("resize", () => {
