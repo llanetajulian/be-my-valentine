@@ -66,7 +66,7 @@
       font-weight: 900;
       cursor: pointer;
       transition: box-shadow 0.2s ease, transform 0.2s ease;
-      position: absolute; /* absolute from the start */
+      position: absolute;
       left: 0;
       top: 0;
       transform: translate(-50%, -50%);
@@ -131,6 +131,10 @@
 
     const MAX_CLICKS = stages.length;
 
+    // TUNE THIS if needed:
+    // Higher = NO moves slower early, faster late.
+    const NO_POWER = 4.5;
+
     let noCount = 0;
 
     const bottomZone = document.getElementById("bottomZone");
@@ -147,15 +151,15 @@
       return a + (b - a) * t;
     }
 
-    // YES: smooth + quick
+    // YES growth curve (feels good)
     function easeOutCubic(t) {
       return 1 - Math.pow(1 - t, 3);
     }
 
     function setStage(stageIndex) {
       const stage = stages[stageIndex - 1];
-      stageTextEl.textContent = stage.text;        // REPLACE
-      mainMedia.src = encodeAssetPath(stage.file);  // swap media
+      stageTextEl.textContent = stage.text;         // REPLACE
+      mainMedia.src = encodeAssetPath(stage.file);   // swap media
     }
 
     function updateLayout(stageIndex) {
@@ -186,24 +190,27 @@
       yesBtn.style.height = `${yesH}px`;
       yesBtn.style.fontSize = `${yesFont}px`;
 
-      // --- NO movement (GUARANTEED) ---
-      // Clicks 1..19: move toward "barely visible" bottom-right.
-      // Click 20: move fully off and hide.
+      // --- NO movement (slow early, barely visible at 19, gone at 20) ---
       const noHalfW = noBtn.offsetWidth / 2;
       const noHalfH = noBtn.offsetHeight / 2;
 
-      // Keep ~6px of the button showing
+      // how many pixels still visible at click 19
       const barely = 6;
+
+      // Correct "barely visible" CENTER position:
+      // Left edge ~ zoneW - barely  => center = zoneW - barely + halfWidth
+      // Top edge  ~ zoneH - barely  => center = zoneH - barely + halfHeight
       const noBarelyX = zoneW - barely + noHalfW;
       const noBarelyY = zoneH - barely + noHalfH;
 
-      // Fully off-screen target
+      // Fully off-screen (center beyond edge)
       const noOffX = zoneW + noHalfW + 12;
       const noOffY = zoneH + noHalfH + 12;
 
       if (stageIndex < MAX_CLICKS) {
-        // spread across 1..19 so click 19 lands at "barely visible"
-        const noProgress = stageIndex / MAX_CLICKS;
+        // 1..19 maps to 0..1 using MAX_CLICKS-1
+        const noBase = (MAX_CLICKS <= 2) ? 1 : (stageIndex / (MAX_CLICKS - 1));
+        const noProgress = Math.pow(noBase, NO_POWER);
 
         const noX = lerp(noStartX, noBarelyX, noProgress);
         const noY = lerp(startY,  noBarelyY, noProgress);
