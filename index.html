@@ -194,8 +194,8 @@
 
       // Keep ~6px of the button showing
       const barely = 6;
-      const noBarelyX = zoneW - noHalfW + barely;
-      const noBarelyY = zoneH - noHalfH + barely;
+      const noBarelyX = zoneW - barely + noHalfW;
+      const noBarelyY = zoneH - barely + noHalfH;
 
       // Fully off-screen target
       const noOffX = zoneW + noHalfW + 12;
@@ -203,7 +203,7 @@
 
       if (stageIndex < MAX_CLICKS) {
         // spread across 1..19 so click 19 lands at "barely visible"
-        const noProgress = (MAX_CLICKS <= 1) ? 1 : (stageIndex / (MAX_CLICKS - 1));
+        const noProgress = stageIndex / MAX_CLICKS;
 
         const noX = lerp(noStartX, noBarelyX, noProgress);
         const noY = lerp(startY,  noBarelyY, noProgress);
