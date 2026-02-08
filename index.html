@@ -2,29 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Be My Valentine</title>
+
   <style>
     body {
       margin: 0;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center;
-      background: #fff;
+      align-items: flex-start;
+      background: #ffffff;
+      font-family: sans-serif;
     }
+
     .container {
       text-align: center;
+      margin-top: 8vh;        /* pushes content down slightly */
+      height: 50vh;           /* top half of the screen */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
+
     .main-gif {
-      width: 60vh;
-      max-width: auto;
+      height: 55vh;           /* big but controlled */
+      width: auto;
+      max-width: 90vw;        /* prevents overflow on small screens */
+      margin: 0 auto 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <img src="assets/ezgif.com-coalesce.gif" alt="Valentine gif" class="main-gif" />
+    <img
+      src="assets/ezgif.com-coalesce.gif"
+      alt="Valentine gif"
+      class="main-gif"
+    />
+
+    <h1>Will you be my Valentine?</h1>
   </div>
 </body>
 </html>
