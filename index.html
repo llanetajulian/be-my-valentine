@@ -117,8 +117,7 @@
       { file: "oh hell nah.gif", text: "Oh hell nah" }
     ];
 
-    const MAX_CLICKS = stages.length;
-
+    const MAX_CLICKS = stages.length; // 20
     let noCount = 0;
 
     const bottomZone = document.getElementById("bottomZone");
@@ -171,22 +170,22 @@
       yesBtn.style.height = `${yesH}px`;
       yesBtn.style.fontSize = `${yesFont}px`;
 
-      // ---- NO (deterministic, fixed targets) ----
+      // ---- NO ----
       const noStartX = zoneW * 0.65;
       const noStartY = zoneH * 0.50;
 
       const noHalfW = noBtn.offsetWidth / 2;
       const noHalfH = noBtn.offsetHeight / 2;
 
-      // pixels still showing at click 19
-      const barelyX = 6;
-      const barelyY = 6;
+      // More forgiving "barely visible"
+      const barelyX = 16;
+      const barelyY = 16;
 
-      // ✅ Correct: keep edges inside until click 19
-      const noBarelyX = (zoneW - barelyX) - noHalfW; // center so right edge is zoneW-barelyX
-      const noBarelyY = zoneH * 0.75; // center so bottom edge is zoneH-barelyY
+      // Right/bottom edge stay inside by "barely"
+      const noBarelyX = (zoneW - barelyX) - noHalfW;
+      const noBarelyY = (zoneH - barelyY) - noHalfH;
 
-      // fully off-screen at click 20
+      // Fully off-screen at click 20
       const noOffX = zoneW + noHalfW + 12;
       const noOffY = zoneH + noHalfH + 12;
 
@@ -199,10 +198,10 @@
       }
 
       if (stageIndex < MAX_CLICKS) {
-        // stage 1..19 -> p 0..1 (19 lands at barely visible)
-        const steps = MAX_CLICKS - 2;      // 18
+        // KEY CHANGE:
+        // stage 1..19 -> p 0..(18/19) so click 19 is still slightly on-screen
         const stepIndex = stageIndex - 1;  // 0..18
-        const p = steps <= 0 ? 1 : (stepIndex / steps);
+        const p = stepIndex / (MAX_CLICKS - 1); // 0..18/19 (~0.947), never reaches 1
 
         const noX = lerp(noStartX, noBarelyX, p);
         const noY = lerp(noStartY, noBarelyY, p);
@@ -212,7 +211,7 @@
         noBtn.style.opacity = "1";
         noBtn.style.pointerEvents = "auto";
       } else {
-        // stage 20
+        // click 20
         noBtn.style.left = `${noOffX}px`;
         noBtn.style.top  = `${noOffY}px`;
         noBtn.style.opacity = "0";
@@ -228,7 +227,7 @@
     });
 
     yesBtn.addEventListener("click", () => {
-      alert("OKAYYYY LET’S GOOOO 💖");
+      alert("OKAYYYY LET’S GOOOO 💖"); // placeholder celebration
     });
 
     updateLayout(0);
