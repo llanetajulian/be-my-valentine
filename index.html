@@ -166,7 +166,8 @@
     function updateLayout(stageIndex) {
       const tRaw = Math.min(stageIndex / MAX_CLICKS, 1);
       const yesT = easeOutCubic(tRaw);
-      const noT  = Math.pow(tRaw, 5);
+      const noT  = Math.pow(tRaw, 3);
+      const noTClamped = (stageIndex < MAX_CLICKS) ? Math.min(noT, 0.97) : 1;
 
       const pad = 18;
       const zoneW = bottomZone.clientWidth;
@@ -199,8 +200,8 @@
       // Just barely off-screen at the final click (based on real button size)
       const noOffX = zoneW + noHalfW + 12;
       const noOffY = zoneH + noHalfH + 12;
-      const noX = lerp(noStartX, noOffX, noT);
-      const noY = lerp(startY,  noOffY, noT);
+      const noX = lerp(noStartX, noOffX, noTClamped);
+      const noY = lerp(startY,  noOffY, noTClamped);
 
       noBtn.style.left = `${noX}px`;
       noBtn.style.top  = `${noY}px`;
