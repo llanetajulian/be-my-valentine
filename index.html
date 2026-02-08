@@ -154,7 +154,7 @@
 
     // NO: barely moves early, accelerates late (so it doesn't vanish instantly)
     function easeInQuad(t) {
-      return t * t;
+      return t;
     }
 
     function setStage(stageIndex) {
@@ -193,8 +193,8 @@
       yesBtn.style.fontSize = `${yesFont}px`;
 
       // NO stays same size but goes down-right OFF screen by click 20
-      const noOffX = zoneW + 320;   // beyond right edge
-      const noOffY = zoneH + 260;   // beyond bottom edge
+      const noOffX = zoneW + 160;   // beyond right edge
+      const noOffY = zoneH + 140;   // beyond bottom edge
       const noX = lerp(noStartX, noOffX, noT);
       const noY = lerp(startY,  noOffY, noT);
 
